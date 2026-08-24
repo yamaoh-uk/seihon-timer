@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="製本速度">
+<meta name="theme-color" content="#1d6ef5">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>製本速度シミュレーター</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #f2f4f7;
+    --white: #ffffff;
+    --border: #e2e6ed;
+    --text: #0f1623;
+    --muted: #8691a4;
+    --pill: #ebeef3;
+    --blue: #1d6ef5;
+    --blue-bg: #e8f0fe;
+    --red: #e53935;
+    --shadow: 0 2px 10px rgba(0,0,0,0.07);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html { height: 100%; overscroll-behavior: none; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    padding-top: calc(var(--safe-top) + 12px);
+    padding-bottom: calc(var(--safe-bottom) + 20px);
+    padding-left: 14px;
+    padding-right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── トップバー ── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 2px 6px;
+  }
+  .top-bar h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .top-bar .badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--blue);
+    background: var(--blue-bg);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  /* ── ヒーロー ── */
+  .hero {
+    background: var(--blue);
+    border-radius: 22px;
+    padding: 20px 20px 18px;
+    box-shadow: 0 6px 20px rgba(29,110,245,0.28);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    bottom: -50px; right: -30px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .hero-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 96px;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -5px;
+  }
+  .hero-unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    margin-top: 2px;
+    margin-bottom: 16px;
+  }
+  .hero-unit strong { color: rgba(255,255,255,0.9); font-weight: 600; }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: rgba(255,255,255,0.1);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .hs-item {
+    padding: 10px 6px;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.12);
+  }
+  .hs-item:last-child { border-right: none; }
+  .hs-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    color: #fff;
+    display: block;
+    letter-spacing: -0.5px;
+  }
+  .hs-lbl {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    font-weight: 500;
+    display: block;
+    margin-top: 1px;
+  }
+
+  .rate-bar-wrap { margin-top: 12px; }
+  .rate-bar-track {
+    height: 5px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .rate-bar-fill {
+    height: 100%;
+    background: rgba(255,255,255,0.8);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    width: 100%;
+  }
+  .rate-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+  .rate-row span { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; }
+  .rate-row .rr-val { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.8); }
+
+  /* ── カード共通 ── */
+  .card {
+    background: var(--white);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .card-head {
+    padding: 13px 16px 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+  }
+
+  /* 設定行 */
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .setting-row:last-of-type { border-bottom: none; }
+  .sr-text { flex: 1; min-width: 0; }
+  .sr-label { font-size: 15px; font-weight: 600; }
+  .sr-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  /* ステッパー */
+  .stepper {
+    display: flex;
+    align-items: center;
+    background: var(--pill);
+    border-radius: 14px;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .sp-btn {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+    user-select: none;
+    transition: background 0.1s;
+  }
+  .sp-btn:active { background: var(--border); }
+  .sp-mid { min-width: 58px; text-align: center; padding: 0 2px; }
+  .sp-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    display: block;
+    line-height: 1.1;
+  }
+  .sp-unit { font-size: 10px; color: var(--muted); font-weight: 500; display: block; }
+
+  /* 内訳バー */
+  .bd-wrap { padding: 10px 16px 14px; border-top: 1px solid var(--border); }
+  .bd-bar {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--pill);
+    overflow: hidden;
+    display: flex;
+  }
+  .bd-w { background: var(--blue); transition: width 0.4s; border-radius: 5px 0 0 5px; }
+  .bd-s { background: var(--red); opacity: 0.5; transition: width 0.4s; border-radius: 0 5px 5px 0; }
+  .bd-legend { display: flex; gap: 14px; margin-top: 7px; }
+  .bd-legend span {
+    font-size: 11px; color: var(--muted); font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .bd-legend span i {
+    display: inline-block; width: 9px; height: 9px;
+    border-radius: 2px; font-style: normal;
+  }
+  .dot-w { background: var(--blue); }
+  .dot-s { background: var(--red); opacity: 0.5; }
+
+  /* 停止パターン */
+  .stop-item { padding: 13px 16px; border-bottom: 1px solid var(--border); }
+  .stop-item:last-of-type { border-bottom: none; }
+  .si-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .si-name { font-size: 14px; font-weight: 600; }
+  .si-del {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--pill);
+    color: var(--muted);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+  }
+  .si-del:active { background: #fde8e8; color: var(--red); border-color: var(--red); }
+  .si-body { display: flex; align-items: center; gap: 8px; }
+  .si-sep { font-size: 13px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+
+  /* 追加ボタン */
+  .add-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: calc(100% - 32px);
+    margin: 12px 16px 14px;
+    height: 48px;
+    border-radius: 12px;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.15s;
+  }
+  .add-btn:active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+
+  /* インストール案内 */
+  .install-banner {
+    background: var(--white);
+    border-radius: 14px;
+    border: 1.5px solid var(--blue-bg);
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    box-shadow: var(--shadow);
+  }
+  .install-banner .ib-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .install-banner .ib-text { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .install-banner .ib-text strong { color: var(--blue); font-weight: 600; }
+  .install-banner .ib-close {
+    margin-left: auto; flex-shrink: 0;
+    width: 24px; height: 24px;
+    border: none; background: none; color: var(--muted);
+    font-size: 16px; cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .spacer { height: 4px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>製本速度シミュレーター</h1>
+  <span class="badge">理論値</span>
+</div>
+
+<!-- インストール案内（初回のみ） -->
+<div class="install-banner" id="install-banner" style="display:none">
+  <span class="ib-icon">📲</span>
+  <div class="ib-text">
+    <strong>ホーム画面に追加するとアプリとして使えます</strong><br>
+    Safari → 共有ボタン →「ホーム画面に追加」
+  </div>
+  <button class="ib-close" onclick="dismissBanner()">✕</button>
+</div>
+
+<!-- ヒーロー -->
+<div class="hero">
+  <div class="hero-eyebrow">理論生産数</div>
+  <div class="hero-num" id="res-main">—</div>
+  <div class="hero-unit">冊 <strong id="res-unit">/ 1時間</strong></div>
+  <div class="hero-stats">
+    <div class="hs-item">
+      <span class="hs-val" id="res-work">—</span>
+      <span class="hs-lbl">稼働（分）</span>
+    </div>
+    <div class="hs-item">
+      <span class="hs-val" id="res-stop">—</span>
+      <span class="hs-lbl">停止（分）</span>
+    </div>
+    <div class="hs-item">
+      <span class="hs-val" id="res-rate">—</span>
+      <span class="hs-lbl">稼働率（%）</span>
+    </div>
+  </div>
+  <div class="rate-bar-wrap">
+    <div class="rate-bar-track"><div class="rate-bar-fill" id="rate-fill"></div></div>
+    <div class="rate-row">
+      <span>稼働率</span>
+      <span class="rr-val" id="rate-label">—%</span>
+    </div>
+  </div>
+</div>
+
+<!-- 作業設定 -->
+<div class="card">
+  <div class="card-head">作業設定</div>
+  <div class="setting-row">
+    <div class="sr-text">
+      <div class="sr-label">投入間隔</div>
+      <div class="sr-sub">1冊を入れてから次まで</div>
+    </div>
+    <div class="stepper">
+      <button class="sp-btn" onclick="adj('cycle',-1)">−</button>
+      <div class="sp-mid">
+        <span class="sp-val" id="cycle-val">8</span>
+        <span class="sp-unit">秒 / 冊</span>
+      </div>
+      <button class="sp-btn" onclick="adj('cycle',+1)">+</button>
+    </div>
+  </div>
+  <div class="setting-row">
+    <div class="sr-text">
+      <div class="sr-label">集計時間</div>
+      <div class="sr-sub">計算する作業時間の単位</div>
+    </div>
+    <div class="stepper">
+      <button class="sp-btn" onclick="adj('hours',-1)">−</button>
+      <div class="sp-mid">
+        <span class="sp-val" id="hours-val">1</span>
+        <span class="sp-unit">時間</span>
+      </div>
+      <button class="sp-btn" onclick="adj('hours',+1)">+</button>
+    </div>
+  </div>
+  <div class="bd-wrap">
+    <div class="bd-bar">
+      <div class="bd-w" id="bd-w" style="width:100%"></div>
+      <div class="bd-s" id="bd-s" style="width:0%"></div>
+    </div>
+    <div class="bd-legend">
+      <span><i class="dot-w"></i>稼働時間</span>
+      <span><i class="dot-s"></i>停止時間</span>
+    </div>
+  </div>
+</div>
+
+<!-- 停止パターン -->
+<div class="card">
+  <div class="card-head">停止パターン</div>
+  <div id="stop-list"></div>
+  <button class="add-btn" onclick="addStop()">＋ 停止パターンを追加</button>
+</div>
+
+<div class="spacer"></div>
+
+<script>
+  // ── 状態 ──
+  let state = { cycle: 8, hours: 1, stops: [] };
+
+  // ── ローカルストレージから復元 ──
+  function loadState() {
+    try {
+      const saved = localStorage.getItem('seihon-state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        state.cycle = parsed.cycle || 8;
+        state.hours = parsed.hours || 1;
+        state.stops = (parsed.stops || []).map(s => ({ ...s, id: s.id || Date.now() + Math.random() }));
+      }
+    } catch(e) {}
+    if (state.stops.length === 0) addStop(30, 50);
+  }
+
+  function saveState() {
+    try { localStorage.setItem('seihon-state', JSON.stringify(state)); } catch(e) {}
+  }
+
+  // ── インストール案内（スタンドアロンでなければ表示） ──
+  function checkInstall() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    const dismissed = localStorage.getItem('banner-dismissed');
+    if (!isStandalone && !dismissed) {
+      document.getElementById('install-banner').style.display = 'flex';
+    }
+  }
+  function dismissBanner() {
+    document.getElementById('install-banner').style.display = 'none';
+    localStorage.setItem('banner-dismissed', '1');
+  }
+
+  // ── ステッパー操作 ──
+  function adj(key, d) {
+    if (key === 'cycle') {
+      state.cycle = Math.max(1, Math.min(120, state.cycle + d));
+      document.getElementById('cycle-val').textContent = state.cycle;
+    } else {
+      state.hours = Math.max(1, Math.min(12, state.hours + d));
+      document.getElementById('hours-val').textContent = state.hours;
+      document.getElementById('res-unit').textContent = `/ ${state.hours}時間`;
+    }
+    saveState(); calc();
+  }
+
+  function addStop(sec=30, every=50) {
+    state.stops.push({ id: Date.now() + Math.floor(Math.random()*1000), sec, every });
+    renderStops(); saveState(); calc();
+  }
+
+  function removeStop(id) {
+    state.stops = state.stops.filter(s => s.id !== id);
+    renderStops(); saveState(); calc();
+  }
+
+  function adjStop(id, field, d) {
+    const s = state.stops.find(s => s.id === id);
+    if (!s) return;
+    if (field === 'sec')   s.sec   = Math.max(1, Math.min(600, s.sec + d));
+    if (field === 'every') s.every = Math.max(1, Math.min(999, s.every + d));
+    document.getElementById(`sv-${id}-${field}`).textContent = s[field];
+    saveState(); calc();
+  }
+
+  function renderStops() {
+    const list = document.getElementById('stop-list');
+    list.innerHTML = '';
+    state.stops.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'stop-item';
+      el.innerHTML = `
+        <div class="si-head">
+          <span class="si-name">停止パターン ${i + 1}</span>
+          <button class="si-del" onclick="removeStop(${s.id})">✕</button>
+        </div>
+        <div class="si-body">
+          <div class="stepper">
+            <button class="sp-btn" onclick="adjStop(${s.id},'sec',-5)">−</button>
+            <div class="sp-mid">
+              <span class="sp-val" id="sv-${s.id}-sec">${s.sec}</span>
+              <span class="sp-unit">秒停止</span>
+            </div>
+            <button class="sp-btn" onclick="adjStop(${s.id},'sec',+5)">+</button>
+          </div>
+          <span class="si-sep">を</span>
+          <div class="stepper">
+            <button class="sp-btn" onclick="adjStop(${s.id},'every',-5)">−</button>
+            <div class="sp-mid">
+              <span class="sp-val" id="sv-${s.id}-every">${s.every}</span>
+              <span class="sp-unit">冊ごと</span>
+            </div>
+            <button class="sp-btn" onclick="adjStop(${s.id},'every',+5)">+</button>
+          </div>
+        </div>`;
+      list.appendChild(el);
+    });
+  }
+
+  // ── 計算 ──
+  function calc() {
+    const totalSec = state.hours * 3600;
+    const nextStop = state.stops.map(s => s.every);
+    let elapsed = 0, books = 0, totalStop = 0;
+    while (elapsed + state.cycle <= totalSec) {
+      elapsed += state.cycle;
+      books++;
+      state.stops.forEach((s, i) => {
+        if (books >= nextStop[i]) {
+          const actual = Math.min(s.sec, totalSec - elapsed);
+          if (actual > 0) { elapsed += actual; totalStop += actual; }
+          nextStop[i] += s.every;
+        }
+      });
+    }
+    const workSec = totalSec - totalStop;
+    const rate = Math.round(workSec / totalSec * 100);
+    document.getElementById('res-main').textContent = books;
+    document.getElementById('res-work').textContent = (workSec / 60).toFixed(1);
+    document.getElementById('res-stop').textContent = (totalStop / 60).toFixed(1);
+    document.getElementById('res-rate').textContent = rate;
+    document.getElementById('rate-label').textContent = rate + '%';
+    document.getElementById('rate-fill').style.width = rate + '%';
+    document.getElementById('bd-w').style.width = (workSec / totalSec * 100).toFixed(1) + '%';
+    document.getElementById('bd-s').style.width = (totalStop / totalSec * 100).toFixed(1) + '%';
+  }
+
+  // ── 画面反映（復元後） ──
+  function syncUI() {
+    document.getElementById('cycle-val').textContent = state.cycle;
+    document.getElementById('hours-val').textContent = state.hours;
+    document.getElementById('res-unit').textContent = `/ ${state.hours}時間`;
+    renderStops();
+    calc();
+  }
+
+  // ── Service Worker 登録 ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  // ── 起動 ──
+  loadState();
+  syncUI();
+  checkInstall();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "製本速度シミュレーター",
+  "short_name": "製本速度",
+  "description": "製本機械の理論生産数シミュレーター",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f4f7",
+  "theme_color": "#1d6ef5",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
