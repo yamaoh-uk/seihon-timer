@@ -63,6 +63,31 @@
     letter-spacing: -0.2px;
   }
 
+  /* ── メインタブ ── */
+  .tab-bar {
+    display: flex;
+    background: var(--pill);
+    border-radius: 14px;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    flex: 1;
+    height: 40px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tab-btn.active { background: var(--white); color: var(--blue); box-shadow: var(--shadow); }
+  .tab-panel { display: none; flex-direction: column; gap: 10px; }
+  .tab-panel.active { display: flex; }
+
   /* ── ヒーロー（理論生産数） ── */
   .hero {
     background: var(--blue);
@@ -111,6 +136,16 @@
     margin-top: 8px;
   }
   .hero-unit strong { color: rgba(255,255,255,0.9); font-weight: 600; }
+  .hero-status {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255,255,255,0.16);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
 
   /* ── カード共通 ── */
   .card {
@@ -128,6 +163,30 @@
     text-transform: uppercase;
     letter-spacing: 0.09em;
   }
+
+  /* 本の仕様入力 */
+  .spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px 16px 16px;
+  }
+  .spec-field { display: flex; flex-direction: column; gap: 4px; }
+  .spec-field label { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .spec-field input {
+    height: 46px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--pill);
+    padding: 0 12px;
+    font-size: 16px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    color: var(--text);
+    transition: opacity 0.15s;
+  }
+  .spec-field input:focus { outline: 2px solid var(--blue); background: var(--white); }
+  .spec-field.disabled input { opacity: 0.5; pointer-events: none; }
 
   /* 設定行 */
   .setting-row {
@@ -193,8 +252,62 @@
     flex-shrink: 0;
   }
   .big-btn:active { transform: scale(0.97); }
+  .big-btn:disabled { opacity: 0.5; pointer-events: none; }
   .big-btn.start { background: var(--blue); box-shadow: 0 6px 18px rgba(29,110,245,0.32); }
   .big-btn.stop { background: var(--red); box-shadow: 0 6px 18px rgba(229,57,53,0.32); }
+
+  /* ── 履歴タブ ── */
+  .view-toggle {
+    display: flex;
+    background: var(--pill);
+    border-radius: 12px;
+    padding: 3px;
+    flex-shrink: 0;
+  }
+  .view-btn {
+    flex: 1;
+    height: 34px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .view-btn.active { background: var(--white); color: var(--blue); box-shadow: var(--shadow); }
+
+  .group-head {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--blue);
+    background: var(--blue-bg);
+  }
+  .group-sub { font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+
+  .rec-card { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .rec-card:last-child { border-bottom: none; }
+  .rec-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .rec-time { font-size: 13px; font-weight: 700; }
+  .rec-date { font-size: 11px; color: var(--muted); }
+  .rec-spec { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .rec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px 12px;
+    margin-top: 8px;
+  }
+  .rec-item { font-size: 12px; color: var(--muted); }
+  .rec-item b { color: var(--text); font-weight: 600; font-family: 'DM Mono', monospace; }
+
+  .empty-state, .loading-state {
+    padding: 40px 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
 
   /* インストール案内 */
   .install-banner {
@@ -237,57 +350,127 @@
   <button class="ib-close" onclick="dismissBanner()">✕</button>
 </div>
 
-<!-- 理論生産数 -->
-<div class="hero" id="metro-hero">
-  <div class="hero-eyebrow">理論生産数</div>
-  <div class="hero-num" id="res-main">450</div>
-  <div class="hero-unit">冊 <strong>/ 1時間</strong></div>
+<!-- メインタブ -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-btn-measure" onclick="switchTab('measure')">計測</button>
+  <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">履歴</button>
 </div>
 
-<!-- 投入間隔設定 -->
-<div class="card">
-  <div class="card-head">投入間隔設定</div>
-  <div class="setting-row">
-    <div class="sr-text">
-      <div class="sr-label">投入間隔</div>
-      <div class="sr-sub">ビープ音が鳴る間隔</div>
-    </div>
-    <div class="stepper" id="cycle-stepper">
-      <button class="sp-btn" onclick="adjCycle(-1)">−</button>
-      <div class="sp-mid">
-        <span class="sp-val" id="cycle-val">8</span>
-        <span class="sp-unit">秒 / 冊</span>
+<!-- ══════════ 計測タブ ══════════ -->
+<div class="tab-panel active" id="tab-measure">
+
+  <!-- 理論生産数 -->
+  <div class="hero" id="metro-hero">
+    <div class="hero-eyebrow">理論生産数</div>
+    <div class="hero-num" id="res-main">450</div>
+    <div class="hero-unit">冊 <strong>/ 1時間</strong></div>
+    <div class="hero-status" id="metro-status">待機中</div>
+  </div>
+
+  <!-- 本の仕様 -->
+  <div class="card">
+    <div class="card-head">本の仕様</div>
+    <div class="spec-grid" id="spec-grid">
+      <div class="spec-field" id="field-height">
+        <label>縦 (mm)</label>
+        <input type="number" inputmode="decimal" id="spec-height" placeholder="0" oninput="onSpecInput()">
       </div>
-      <button class="sp-btn" onclick="adjCycle(+1)">+</button>
+      <div class="spec-field" id="field-width">
+        <label>横 (mm)</label>
+        <input type="number" inputmode="decimal" id="spec-width" placeholder="0" oninput="onSpecInput()">
+      </div>
+      <div class="spec-field" id="field-thickness">
+        <label>厚み (mm)</label>
+        <input type="number" inputmode="decimal" id="spec-thickness" placeholder="0" oninput="onSpecInput()">
+      </div>
+      <div class="spec-field" id="field-count">
+        <label>冊数</label>
+        <input type="number" inputmode="numeric" id="spec-count" placeholder="0" oninput="onSpecInput()">
+      </div>
     </div>
   </div>
+
+  <!-- 投入間隔設定 -->
+  <div class="card">
+    <div class="card-head">投入間隔設定</div>
+    <div class="setting-row">
+      <div class="sr-text">
+        <div class="sr-label">投入間隔</div>
+        <div class="sr-sub">ビープ音が鳴る間隔</div>
+      </div>
+      <div class="stepper" id="cycle-stepper">
+        <button class="sp-btn" onclick="adjCycle(-1)">−</button>
+        <div class="sp-mid">
+          <span class="sp-val" id="cycle-val">8</span>
+          <span class="sp-unit">秒 / 冊</span>
+        </div>
+        <button class="sp-btn" onclick="adjCycle(+1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- スタート/ストップ -->
+  <button class="big-btn start" id="toggle-btn" onclick="toggleMetro()">スタート</button>
+
 </div>
 
-<!-- スタート/ストップ -->
-<button class="big-btn start" id="toggle-btn" onclick="toggleMetro()">スタート</button>
+<!-- ══════════ 履歴タブ ══════════ -->
+<div class="tab-panel" id="tab-history">
+
+  <div class="view-toggle">
+    <button class="view-btn active" id="view-btn-date" onclick="switchHistoryView('date')">日付別</button>
+    <button class="view-btn" id="view-btn-spec" onclick="switchHistoryView('spec')">仕様別（速度比較）</button>
+  </div>
+
+  <div class="card" id="history-container">
+    <div class="loading-state">読み込み中…</div>
+  </div>
+
+</div>
 
 <div class="spacer"></div>
 
-<script>
-  // ── 状態 ──
-  let state = { cycle: 8 };
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot,
+    enableIndexedDbPersistence
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-  // ── ローカルストレージから復元 ──
+  const firebaseConfig = {
+    apiKey: "AIzaSyAiLRhNSUcaB6X2lWpPYxBoCKti9a9-JMc",
+    authDomain: "yamao-zaiko.firebaseapp.com",
+    projectId: "yamao-zaiko",
+    storageBucket: "yamao-zaiko.firebasestorage.app",
+    messagingSenderId: "336996135723",
+    appId: "1:336996135723:web:e7e6ff5ff33fb88eaa0b6e",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  try { enableIndexedDbPersistence(db); } catch (e) {}
+
+  // ── 状態 ──
+  let state = { cycle: 8, specHeight: '', specWidth: '', specThickness: '', specCount: '' };
+
   function loadState() {
     try {
       const saved = localStorage.getItem('seihon-state');
       if (saved) {
         const parsed = JSON.parse(saved);
         state.cycle = parsed.cycle || 8;
+        state.specHeight = parsed.specHeight ?? '';
+        state.specWidth = parsed.specWidth ?? '';
+        state.specThickness = parsed.specThickness ?? '';
+        state.specCount = parsed.specCount ?? '';
       }
     } catch(e) {}
   }
-
   function saveState() {
     try { localStorage.setItem('seihon-state', JSON.stringify(state)); } catch(e) {}
   }
 
-  // ── インストール案内（スタンドアロンでなければ表示） ──
+  // ── インストール案内 ──
   function checkInstall() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
@@ -296,23 +479,54 @@
       document.getElementById('install-banner').style.display = 'flex';
     }
   }
-  function dismissBanner() {
+  window.dismissBanner = function() {
     document.getElementById('install-banner').style.display = 'none';
     localStorage.setItem('banner-dismissed', '1');
+  };
+
+  // ── メインタブ切替 ──
+  window.switchTab = function(name) {
+    document.getElementById('tab-measure').classList.toggle('active', name === 'measure');
+    document.getElementById('tab-history').classList.toggle('active', name === 'history');
+    document.getElementById('tab-btn-measure').classList.toggle('active', name === 'measure');
+    document.getElementById('tab-btn-history').classList.toggle('active', name === 'history');
+  };
+
+  // ── 本の仕様入力 ──
+  function onSpecInput() {
+    state.specHeight = document.getElementById('spec-height').value;
+    state.specWidth = document.getElementById('spec-width').value;
+    state.specThickness = document.getElementById('spec-thickness').value;
+    state.specCount = document.getElementById('spec-count').value;
+    saveState();
+  }
+  window.onSpecInput = onSpecInput;
+
+  function syncSpecInputs() {
+    document.getElementById('spec-height').value = state.specHeight;
+    document.getElementById('spec-width').value = state.specWidth;
+    document.getElementById('spec-thickness').value = state.specThickness;
+    document.getElementById('spec-count').value = state.specCount;
   }
 
-  // ── 理論生産数（1時間固定 = 3600 ÷ 投入間隔） ──
+  function setSpecDisabled(disabled) {
+    ['field-height','field-width','field-thickness','field-count'].forEach(id => {
+      document.getElementById(id).classList.toggle('disabled', disabled);
+    });
+  }
+
+  // ── 理論生産数 ──
   function calcProduction() {
     document.getElementById('res-main').textContent = Math.round(3600 / state.cycle);
   }
 
   // ── 投入間隔ステッパー ──
-  function adjCycle(d) {
+  window.adjCycle = function(d) {
     state.cycle = Math.max(1, Math.min(120, state.cycle + d));
     document.getElementById('cycle-val').textContent = state.cycle;
     calcProduction();
     saveState();
-  }
+  };
 
   // ── ビープ音（Web Audio API） ──
   let audioCtx = null;
@@ -334,7 +548,7 @@
     } catch(e) {}
   }
 
-  // ── 画面スリープ防止（稼働中に画面が消えないように） ──
+  // ── 画面スリープ防止 ──
   let wakeLock = null;
   async function requestWakeLock() {
     try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
@@ -347,7 +561,7 @@
   });
 
   // ── メトロノーム本体 ──
-  const metro = { running: false, timerId: null };
+  const metro = { running: false, timerId: null, actualCount: 0, startedAtMs: 0, startedAtDate: null };
 
   function pulse() {
     const hero = document.getElementById('metro-hero');
@@ -360,24 +574,58 @@
     if (!metro.running) return;
     beep();
     pulse();
+    metro.actualCount++;
   }
 
   function startMetro() {
+    const h = parseFloat(state.specHeight), w = parseFloat(state.specWidth),
+          t = parseFloat(state.specThickness), c = parseFloat(state.specCount);
+    if (!(h > 0) || !(w > 0) || !(t > 0) || !(c > 0)) {
+      alert('本の仕様（縦・横・厚み・冊数）をすべて入力してください');
+      return;
+    }
     metro.running = true;
+    metro.actualCount = 0;
+    metro.startedAtMs = Date.now();
+    metro.startedAtDate = new Date();
     document.getElementById('cycle-stepper').classList.add('disabled');
+    setSpecDisabled(true);
+    document.getElementById('metro-status').textContent = '稼働中';
     requestWakeLock();
     tick();
     metro.timerId = setInterval(tick, state.cycle * 1000);
   }
 
-  function stopMetro() {
+  async function stopMetro() {
+    if (!metro.running) return;
     metro.running = false;
-    document.getElementById('cycle-stepper').classList.remove('disabled');
     clearInterval(metro.timerId);
     releaseWakeLock();
+    document.getElementById('cycle-stepper').classList.remove('disabled');
+    setSpecDisabled(false);
+    document.getElementById('metro-status').textContent = '待機中';
+
+    const elapsedSec = Math.round((Date.now() - metro.startedAtMs) / 1000);
+    const record = {
+      specHeight: parseFloat(state.specHeight),
+      specWidth: parseFloat(state.specWidth),
+      specThickness: parseFloat(state.specThickness),
+      specCount: parseFloat(state.specCount),
+      cycleSec: state.cycle,
+      theoreticalPerHour: Math.round(3600 / state.cycle),
+      actualCount: metro.actualCount,
+      elapsedSec: elapsedSec,
+      startedAt: metro.startedAtDate,
+      stoppedAt: new Date(),
+    };
+    try {
+      await addDoc(collection(db, 'seihon_records'), record);
+    } catch (e) {
+      alert('記録の保存に失敗しました（オフラインの場合は接続復帰後に自動保存されます）: ' + e.message);
+    }
   }
 
-  function toggleMetro() {
+  window.toggleMetro = function() {
     const btn = document.getElementById('toggle-btn');
     if (metro.running) {
       stopMetro();
@@ -386,16 +634,119 @@
       btn.classList.add('start');
     } else {
       startMetro();
-      btn.textContent = 'ストップ';
-      btn.classList.remove('start');
-      btn.classList.add('stop');
+      if (metro.running) {
+        btn.textContent = 'ストップ';
+        btn.classList.remove('start');
+        btn.classList.add('stop');
+      }
     }
+  };
+
+  // ══════════ 履歴タブ ══════════
+  let historyView = 'date';
+  let allRecords = [];
+
+  window.switchHistoryView = function(v) {
+    historyView = v;
+    document.getElementById('view-btn-date').classList.toggle('active', v === 'date');
+    document.getElementById('view-btn-spec').classList.toggle('active', v === 'spec');
+    renderHistory();
+  };
+
+  function toDate(ts) {
+    if (!ts) return new Date();
+    return ts.toDate ? ts.toDate() : new Date(ts);
+  }
+  function fmtDate(d) {
+    return d.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
+  }
+  function fmtTime(d) {
+    return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  }
+  function fmtDuration(sec) {
+    const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+    return m > 0 ? `${m}分${s}秒` : `${s}秒`;
+  }
+  function specKey(r) {
+    return `${r.specHeight}×${r.specWidth}×${r.specThickness}mm`;
+  }
+  function actualPace(r) {
+    return r.actualCount > 0 ? (r.elapsedSec / r.actualCount).toFixed(1) : '—';
+  }
+
+  function recordCard(r, showSpec) {
+    const d = toDate(r.startedAt);
+    return `
+      <div class="rec-card">
+        <div class="rec-top">
+          <span class="rec-time">${fmtTime(d)}</span>
+          <span class="rec-date">${fmtDate(d)}</span>
+        </div>
+        ${showSpec ? `<div class="rec-spec">${specKey(r)} ／ ${r.specCount}冊</div>` : ''}
+        <div class="rec-grid">
+          <div class="rec-item">投入間隔 <b>${r.cycleSec}秒</b></div>
+          <div class="rec-item">理論生産数 <b>${r.theoreticalPerHour}冊/h</b></div>
+          <div class="rec-item">実績冊数 <b>${r.actualCount}冊</b></div>
+          <div class="rec-item">計測時間 <b>${fmtDuration(r.elapsedSec)}</b></div>
+          <div class="rec-item">実績ペース <b>${actualPace(r)}秒/冊</b></div>
+        </div>
+      </div>`;
+  }
+
+  function renderHistory() {
+    const container = document.getElementById('history-container');
+    if (allRecords.length === 0) {
+      container.innerHTML = '<div class="empty-state">まだ記録がありません</div>';
+      return;
+    }
+
+    if (historyView === 'date') {
+      const groups = new Map();
+      allRecords.forEach(r => {
+        const key = fmtDate(toDate(r.startedAt));
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r);
+      });
+      let html = '';
+      groups.forEach((recs, dateLabel) => {
+        html += `<div class="group-head">${dateLabel}<div class="group-sub">${recs.length}件</div></div>`;
+        recs.forEach(r => { html += recordCard(r, true); });
+      });
+      container.innerHTML = html;
+    } else {
+      const groups = new Map();
+      allRecords.forEach(r => {
+        const key = specKey(r);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r);
+      });
+      let html = '';
+      groups.forEach((recs, spec) => {
+        const paces = recs.map(r => r.actualCount > 0 ? r.elapsedSec / r.actualCount : null).filter(v => v !== null);
+        const avg = paces.length ? (paces.reduce((a,b) => a+b, 0) / paces.length).toFixed(1) : '—';
+        html += `<div class="group-head">${spec}<div class="group-sub">${recs.length}件・平均実績ペース ${avg}秒/冊</div></div>`;
+        recs.forEach(r => { html += recordCard(r, false); });
+      });
+      container.innerHTML = html;
+    }
+  }
+
+  function subscribeHistory() {
+    const q = query(collection(db, 'seihon_records'), orderBy('startedAt', 'desc'), limit(300));
+    onSnapshot(q, snap => {
+      allRecords = snap.docs.map(d => d.data());
+      renderHistory();
+    }, err => {
+      document.getElementById('history-container').innerHTML =
+        `<div class="empty-state">履歴の読み込みに失敗しました<br>${err.message}</div>`;
+    });
   }
 
   // ── 画面反映（復元後） ──
   function syncUI() {
     document.getElementById('cycle-val').textContent = state.cycle;
     calcProduction();
+    syncSpecInputs();
   }
 
   // ── Service Worker 登録 ──
@@ -407,6 +758,7 @@
   loadState();
   syncUI();
   checkInstall();
+  subscribeHistory();
 </script>
 </body>
 </html>
