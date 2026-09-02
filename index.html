@@ -236,6 +236,34 @@
   }
   .sp-unit { font-size: 10px; color: var(--muted); font-weight: 500; display: block; }
 
+  /* 音の設定 */
+  .sound-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .sound-option:last-child { border-bottom: none; }
+  .so-label { font-size: 14px; font-weight: 600; }
+  .so-radio {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .sound-option.selected .so-radio { border-color: var(--blue); }
+  .sound-option.selected .so-radio::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--blue);
+  }
+
   /* ── スタート/ストップ ボタン ── */
   .big-btn {
     width: 100%;
@@ -409,6 +437,12 @@
     </div>
   </div>
 
+  <!-- 音の設定 -->
+  <div class="card">
+    <div class="card-head">音の設定</div>
+    <div id="sound-list"></div>
+  </div>
+
   <!-- スタート/ストップ -->
   <button class="big-btn start" id="toggle-btn" onclick="toggleMetro()">スタート</button>
 
@@ -451,7 +485,7 @@
   try { enableIndexedDbPersistence(db); } catch (e) {}
 
   // ── 状態 ──
-  let state = { cycle: 8, specHeight: '', specWidth: '', specThickness: '', specCount: '' };
+  let state = { cycle: 8, specHeight: '', specWidth: '', specThickness: '', specCount: '', soundType: 'pip' };
 
   function loadState() {
     try {
@@ -463,6 +497,7 @@
         state.specWidth = parsed.specWidth ?? '';
         state.specThickness = parsed.specThickness ?? '';
         state.specCount = parsed.specCount ?? '';
+        state.soundType = SOUNDS[parsed.soundType] ? parsed.soundType : 'pip';
       }
     } catch(e) {}
   }
@@ -528,24 +563,64 @@
     saveState();
   };
 
-  // ── ビープ音（Web Audio API） ──
+  // ── 音（Web Audio API） ──
   let audioCtx = null;
-  function beep() {
+  function ensureAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playTone(freq, duration, opts = {}) {
     try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const t = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 1000;
+      const ctx = ensureAudioCtx();
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = opts.type || 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      if (opts.freqEnd) osc.frequency.exponentialRampToValueAtTime(opts.freqEnd, t + duration);
+      const peak = opts.peak ?? 0.35;
+      const attack = opts.attack ?? 0.005;
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.35, t + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-      osc.connect(gain).connect(audioCtx.destination);
+      gain.gain.exponentialRampToValueAtTime(peak, t + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+      osc.connect(gain).connect(ctx.destination);
       osc.start(t);
-      osc.stop(t + 0.13);
+      osc.stop(t + duration + 0.02);
     } catch(e) {}
+  }
+
+  const SOUNDS = {
+    pip:    { label: 'ピッ（短い高音）',       play: () => playTone(1000, 0.12, { type: 'sine',   peak: 0.35, attack: 0.005 }) },
+    poon:   { label: 'ポーン（柔らかい中音）', play: () => playTone(600,  0.32, { type: 'sine',   peak: 0.28, attack: 0.04  }) },
+    pipip:  { label: 'ピピッ（2回短音）',       play: () => {
+                playTone(1100, 0.08, { type: 'sine', peak: 0.32, attack: 0.004 });
+                setTimeout(() => playTone(1100, 0.08, { type: 'sine', peak: 0.32, attack: 0.004 }), 110);
+              } },
+    don:    { label: '低めのドン（低音）',      play: () => playTone(150, 0.18, { type: 'triangle', peak: 0.45, attack: 0.003, freqEnd: 90 }) },
+    denshi: { label: '電子音（電子的なビープ）', play: () => playTone(880, 0.1,  { type: 'square', peak: 0.16, attack: 0.002 }) },
+  };
+
+  function playSound() {
+    (SOUNDS[state.soundType] || SOUNDS.pip).play();
+  }
+
+  window.selectSound = function(key) {
+    if (!SOUNDS[key]) return;
+    state.soundType = key;
+    saveState();
+    renderSoundOptions();
+    SOUNDS[key].play();
+  };
+
+  function renderSoundOptions() {
+    const list = document.getElementById('sound-list');
+    list.innerHTML = Object.entries(SOUNDS).map(([key, s]) => `
+      <div class="sound-option${state.soundType === key ? ' selected' : ''}" onclick="selectSound('${key}')">
+        <span class="so-label">${s.label}</span>
+        <span class="so-radio"></span>
+      </div>`).join('');
   }
 
   // ── 画面スリープ防止 ──
@@ -572,7 +647,7 @@
 
   function tick() {
     if (!metro.running) return;
-    beep();
+    playSound();
     pulse();
     metro.actualCount++;
   }
@@ -747,6 +822,7 @@
     document.getElementById('cycle-val').textContent = state.cycle;
     calcProduction();
     syncSpecInputs();
+    renderSoundOptions();
   }
 
   // ── Service Worker 登録 ──
