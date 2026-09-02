@@ -164,6 +164,30 @@
     letter-spacing: 0.09em;
   }
 
+  /* 既成サイズボタン */
+  .size-preset-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px 0;
+    transition: opacity 0.15s;
+  }
+  .size-preset-row.disabled { opacity: 0.4; pointer-events: none; }
+  .size-btn {
+    flex: 1;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--pill);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .size-btn:active { background: var(--border); }
+  .size-btn.selected { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+
   /* 本の仕様入力 */
   .spec-grid {
     display: grid;
@@ -398,6 +422,12 @@
   <!-- 本の仕様 -->
   <div class="card">
     <div class="card-head">本の仕様</div>
+    <div class="size-preset-row" id="size-preset-row">
+      <button class="size-btn" id="size-btn-A4" onclick="selectSizePreset('A4')">A4</button>
+      <button class="size-btn" id="size-btn-A5" onclick="selectSizePreset('A5')">A5</button>
+      <button class="size-btn" id="size-btn-B5" onclick="selectSizePreset('B5')">B5</button>
+      <button class="size-btn" id="size-btn-B6" onclick="selectSizePreset('B6')">B6</button>
+    </div>
     <div class="spec-grid" id="spec-grid">
       <div class="spec-field" id="field-height">
         <label>縦 (mm)</label>
@@ -533,6 +563,7 @@
     state.specWidth = document.getElementById('spec-width').value;
     state.specThickness = document.getElementById('spec-thickness').value;
     state.specCount = document.getElementById('spec-count').value;
+    renderSizePresets();
     saveState();
   }
   window.onSpecInput = onSpecInput;
@@ -547,6 +578,32 @@
   function setSpecDisabled(disabled) {
     ['field-height','field-width','field-thickness','field-count'].forEach(id => {
       document.getElementById(id).classList.toggle('disabled', disabled);
+    });
+    document.getElementById('size-preset-row').classList.toggle('disabled', disabled);
+  }
+
+  // ── 既成サイズ（A4・A5・B5・B6） ──
+  const SIZE_PRESETS = {
+    A4: { height: 297, width: 210 },
+    A5: { height: 210, width: 148 },
+    B5: { height: 257, width: 182 },
+    B6: { height: 182, width: 128 },
+  };
+
+  window.selectSizePreset = function(key) {
+    const p = SIZE_PRESETS[key];
+    if (!p) return;
+    state.specHeight = String(p.height);
+    state.specWidth = String(p.width);
+    syncSpecInputs();
+    renderSizePresets();
+    saveState();
+  };
+
+  function renderSizePresets() {
+    const h = parseFloat(state.specHeight), w = parseFloat(state.specWidth);
+    Object.entries(SIZE_PRESETS).forEach(([key, p]) => {
+      document.getElementById('size-btn-' + key).classList.toggle('selected', h === p.height && w === p.width);
     });
   }
 
@@ -822,6 +879,7 @@
     document.getElementById('cycle-val').textContent = state.cycle;
     calcProduction();
     syncSpecInputs();
+    renderSizePresets();
     renderSoundOptions();
   }
 
