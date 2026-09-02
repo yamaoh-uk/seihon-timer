@@ -1,7 +1,7 @@
 {
-  "name": "製本メトロノーム",
-  "short_name": "投入タイマー",
-  "description": "投入間隔ごとにビープ音が鳴る製本作業用メトロノーム",
+  "name": "製本タイマー",
+  "short_name": "製本タイマー",
+  "description": "投入間隔ごとにビープ音が鳴る製本作業用タイマー",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
