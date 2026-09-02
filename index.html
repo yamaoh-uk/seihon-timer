@@ -6,11 +6,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="製本速度">
+<meta name="apple-mobile-web-app-title" content="投入タイマー">
 <meta name="theme-color" content="#1d6ef5">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
-<title>製本速度シミュレーター</title>
+<title>製本メトロノーム</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap');
 
@@ -62,24 +62,17 @@
     font-weight: 700;
     letter-spacing: -0.2px;
   }
-  .top-bar .badge {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--blue);
-    background: var(--blue-bg);
-    padding: 3px 10px;
-    border-radius: 20px;
-  }
 
-  /* ── ヒーロー ── */
+  /* ── ヒーロー（メトロノーム表示） ── */
   .hero {
     background: var(--blue);
     border-radius: 22px;
-    padding: 20px 20px 18px;
+    padding: 26px 20px 24px;
     box-shadow: 0 6px 20px rgba(29,110,245,0.28);
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
+    text-align: center;
   }
   .hero::before {
     content: '';
@@ -90,13 +83,18 @@
     background: rgba(255,255,255,0.07);
     pointer-events: none;
   }
+  .hero.pulse { animation: heroPulse 0.16s ease; }
+  @keyframes heroPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
   .hero-eyebrow {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
-    color: rgba(255,255,255,0.6);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 2px;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
   }
   .hero-num {
     font-family: 'DM Mono', monospace;
@@ -110,61 +108,28 @@
     font-size: 14px;
     font-weight: 500;
     color: rgba(255,255,255,0.65);
-    margin-top: 2px;
-    margin-bottom: 16px;
+    margin-top: 8px;
   }
   .hero-unit strong { color: rgba(255,255,255,0.9); font-weight: 600; }
 
-  .hero-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    background: rgba(255,255,255,0.1);
-    border-radius: 14px;
-    overflow: hidden;
-  }
-  .hs-item {
-    padding: 10px 6px;
-    text-align: center;
-    border-right: 1px solid rgba(255,255,255,0.12);
-  }
-  .hs-item:last-child { border-right: none; }
-  .hs-val {
-    font-family: 'DM Mono', monospace;
-    font-size: 20px;
-    font-weight: 500;
-    color: #fff;
-    display: block;
-    letter-spacing: -0.5px;
-  }
-  .hs-lbl {
-    font-size: 10px;
-    color: rgba(255,255,255,0.5);
-    font-weight: 500;
-    display: block;
-    margin-top: 1px;
-  }
-
-  .rate-bar-wrap { margin-top: 12px; }
-  .rate-bar-track {
-    height: 5px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .rate-bar-fill {
-    height: 100%;
-    background: rgba(255,255,255,0.8);
-    border-radius: 3px;
-    transition: width 0.4s ease;
+  /* ── スタート/ストップ ボタン ── */
+  .big-btn {
     width: 100%;
+    height: 84px;
+    border: none;
+    border-radius: 20px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: var(--shadow);
+    transition: transform 0.08s, background 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
   }
-  .rate-row {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 4px;
-  }
-  .rate-row span { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; }
-  .rate-row .rr-val { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.8); }
+  .big-btn:active { transform: scale(0.97); }
+  .big-btn.start { background: var(--blue); box-shadow: 0 6px 18px rgba(29,110,245,0.32); }
+  .big-btn.stop { background: var(--red); box-shadow: 0 6px 18px rgba(229,57,53,0.32); }
 
   /* ── カード共通 ── */
   .card {
@@ -231,29 +196,6 @@
   }
   .sp-unit { font-size: 10px; color: var(--muted); font-weight: 500; display: block; }
 
-  /* 内訳バー */
-  .bd-wrap { padding: 10px 16px 14px; border-top: 1px solid var(--border); }
-  .bd-bar {
-    height: 10px;
-    border-radius: 5px;
-    background: var(--pill);
-    overflow: hidden;
-    display: flex;
-  }
-  .bd-w { background: var(--blue); transition: width 0.4s; border-radius: 5px 0 0 5px; }
-  .bd-s { background: var(--red); opacity: 0.5; transition: width 0.4s; border-radius: 0 5px 5px 0; }
-  .bd-legend { display: flex; gap: 14px; margin-top: 7px; }
-  .bd-legend span {
-    font-size: 11px; color: var(--muted); font-weight: 500;
-    display: flex; align-items: center; gap: 5px;
-  }
-  .bd-legend span i {
-    display: inline-block; width: 9px; height: 9px;
-    border-radius: 2px; font-style: normal;
-  }
-  .dot-w { background: var(--blue); }
-  .dot-s { background: var(--red); opacity: 0.5; }
-
   /* 停止パターン */
   .stop-item { padding: 13px 16px; border-bottom: 1px solid var(--border); }
   .stop-item:last-of-type { border-bottom: none; }
@@ -319,8 +261,7 @@
 <body>
 
 <div class="top-bar">
-  <h1>製本速度シミュレーター</h1>
-  <span class="badge">理論値</span>
+  <h1>製本メトロノーム</h1>
 </div>
 
 <!-- インストール案内（初回のみ） -->
@@ -333,73 +274,31 @@
   <button class="ib-close" onclick="dismissBanner()">✕</button>
 </div>
 
-<!-- ヒーロー -->
-<div class="hero">
-  <div class="hero-eyebrow">理論生産数</div>
-  <div class="hero-num" id="res-main">—</div>
-  <div class="hero-unit">冊 <strong id="res-unit">/ 1時間</strong></div>
-  <div class="hero-stats">
-    <div class="hs-item">
-      <span class="hs-val" id="res-work">—</span>
-      <span class="hs-lbl">稼働（分）</span>
-    </div>
-    <div class="hs-item">
-      <span class="hs-val" id="res-stop">—</span>
-      <span class="hs-lbl">停止（分）</span>
-    </div>
-    <div class="hs-item">
-      <span class="hs-val" id="res-rate">—</span>
-      <span class="hs-lbl">稼働率（%）</span>
-    </div>
-  </div>
-  <div class="rate-bar-wrap">
-    <div class="rate-bar-track"><div class="rate-bar-fill" id="rate-fill"></div></div>
-    <div class="rate-row">
-      <span>稼働率</span>
-      <span class="rr-val" id="rate-label">—%</span>
-    </div>
-  </div>
+<!-- メトロノーム表示 -->
+<div class="hero" id="metro-hero">
+  <div class="hero-eyebrow" id="metro-status">待機中</div>
+  <div class="hero-num" id="metro-count">0</div>
+  <div class="hero-unit">冊 <strong id="metro-interval-label">投入間隔 8秒</strong></div>
 </div>
 
-<!-- 作業設定 -->
+<!-- スタート/ストップ -->
+<button class="big-btn start" id="toggle-btn" onclick="toggleMetro()">スタート</button>
+
+<!-- 投入間隔設定 -->
 <div class="card">
-  <div class="card-head">作業設定</div>
+  <div class="card-head">投入間隔設定</div>
   <div class="setting-row">
     <div class="sr-text">
       <div class="sr-label">投入間隔</div>
-      <div class="sr-sub">1冊を入れてから次まで</div>
+      <div class="sr-sub">ビープ音が鳴る間隔</div>
     </div>
     <div class="stepper">
-      <button class="sp-btn" onclick="adj('cycle',-1)">−</button>
+      <button class="sp-btn" onclick="adjCycle(-1)">−</button>
       <div class="sp-mid">
         <span class="sp-val" id="cycle-val">8</span>
         <span class="sp-unit">秒 / 冊</span>
       </div>
-      <button class="sp-btn" onclick="adj('cycle',+1)">+</button>
-    </div>
-  </div>
-  <div class="setting-row">
-    <div class="sr-text">
-      <div class="sr-label">集計時間</div>
-      <div class="sr-sub">計算する作業時間の単位</div>
-    </div>
-    <div class="stepper">
-      <button class="sp-btn" onclick="adj('hours',-1)">−</button>
-      <div class="sp-mid">
-        <span class="sp-val" id="hours-val">1</span>
-        <span class="sp-unit">時間</span>
-      </div>
-      <button class="sp-btn" onclick="adj('hours',+1)">+</button>
-    </div>
-  </div>
-  <div class="bd-wrap">
-    <div class="bd-bar">
-      <div class="bd-w" id="bd-w" style="width:100%"></div>
-      <div class="bd-s" id="bd-s" style="width:0%"></div>
-    </div>
-    <div class="bd-legend">
-      <span><i class="dot-w"></i>稼働時間</span>
-      <span><i class="dot-s"></i>停止時間</span>
+      <button class="sp-btn" onclick="adjCycle(+1)">+</button>
     </div>
   </div>
 </div>
@@ -415,7 +314,7 @@
 
 <script>
   // ── 状態 ──
-  let state = { cycle: 8, hours: 1, stops: [] };
+  let state = { cycle: 8, stops: [] };
 
   // ── ローカルストレージから復元 ──
   function loadState() {
@@ -424,7 +323,6 @@
       if (saved) {
         const parsed = JSON.parse(saved);
         state.cycle = parsed.cycle || 8;
-        state.hours = parsed.hours || 1;
         state.stops = (parsed.stops || []).map(s => ({ ...s, id: s.id || Date.now() + Math.random() }));
       }
     } catch(e) {}
@@ -449,27 +347,23 @@
     localStorage.setItem('banner-dismissed', '1');
   }
 
-  // ── ステッパー操作 ──
-  function adj(key, d) {
-    if (key === 'cycle') {
-      state.cycle = Math.max(1, Math.min(120, state.cycle + d));
-      document.getElementById('cycle-val').textContent = state.cycle;
-    } else {
-      state.hours = Math.max(1, Math.min(12, state.hours + d));
-      document.getElementById('hours-val').textContent = state.hours;
-      document.getElementById('res-unit').textContent = `/ ${state.hours}時間`;
-    }
-    saveState(); calc();
+  // ── 投入間隔ステッパー ──
+  function adjCycle(d) {
+    state.cycle = Math.max(1, Math.min(120, state.cycle + d));
+    document.getElementById('cycle-val').textContent = state.cycle;
+    document.getElementById('metro-interval-label').textContent = `投入間隔 ${state.cycle}秒`;
+    saveState();
   }
 
+  // ── 停止パターン ──
   function addStop(sec=30, every=50) {
     state.stops.push({ id: Date.now() + Math.floor(Math.random()*1000), sec, every });
-    renderStops(); saveState(); calc();
+    renderStops(); saveState();
   }
 
   function removeStop(id) {
     state.stops = state.stops.filter(s => s.id !== id);
-    renderStops(); saveState(); calc();
+    renderStops(); saveState();
   }
 
   function adjStop(id, field, d) {
@@ -478,7 +372,7 @@
     if (field === 'sec')   s.sec   = Math.max(1, Math.min(600, s.sec + d));
     if (field === 'every') s.every = Math.max(1, Math.min(999, s.every + d));
     document.getElementById(`sv-${id}-${field}`).textContent = s[field];
-    saveState(); calc();
+    saveState();
   }
 
   function renderStops() {
@@ -515,41 +409,146 @@
     });
   }
 
-  // ── 計算 ──
-  function calc() {
-    const totalSec = state.hours * 3600;
-    const nextStop = state.stops.map(s => s.every);
-    let elapsed = 0, books = 0, totalStop = 0;
-    while (elapsed + state.cycle <= totalSec) {
-      elapsed += state.cycle;
-      books++;
-      state.stops.forEach((s, i) => {
-        if (books >= nextStop[i]) {
-          const actual = Math.min(s.sec, totalSec - elapsed);
-          if (actual > 0) { elapsed += actual; totalStop += actual; }
-          nextStop[i] += s.every;
-        }
-      });
+  // ── ビープ音（Web Audio API） ──
+  let audioCtx = null;
+  function beep() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 1000;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.35, t + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.13);
+    } catch(e) {}
+  }
+
+  // ── 画面スリープ防止（稼働中に画面が消えないように） ──
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+  }
+  function releaseWakeLock() {
+    try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch(e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (metro.running && document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+  });
+
+  // ── メトロノーム本体 ──
+  const metro = {
+    running: false,
+    count: 0,
+    phase: 'idle',        // 'running' | 'stopping'
+    nextThresholds: [],
+    timerId: null,
+    countdownId: null,
+    phaseEndTime: 0,
+  };
+
+  function pulse() {
+    const hero = document.getElementById('metro-hero');
+    hero.classList.remove('pulse');
+    void hero.offsetWidth;
+    hero.classList.add('pulse');
+  }
+
+  function updateMetroUI() {
+    document.getElementById('metro-count').textContent = metro.count;
+    const statusEl = document.getElementById('metro-status');
+    if (!metro.running) {
+      statusEl.textContent = '待機中';
+    } else if (metro.phase === 'stopping') {
+      const remain = Math.max(0, Math.ceil((metro.phaseEndTime - Date.now()) / 1000));
+      statusEl.textContent = `停止中（あと${remain}秒）`;
+    } else {
+      statusEl.textContent = '稼働中';
     }
-    const workSec = totalSec - totalStop;
-    const rate = Math.round(workSec / totalSec * 100);
-    document.getElementById('res-main').textContent = books;
-    document.getElementById('res-work').textContent = (workSec / 60).toFixed(1);
-    document.getElementById('res-stop').textContent = (totalStop / 60).toFixed(1);
-    document.getElementById('res-rate').textContent = rate;
-    document.getElementById('rate-label').textContent = rate + '%';
-    document.getElementById('rate-fill').style.width = rate + '%';
-    document.getElementById('bd-w').style.width = (workSec / totalSec * 100).toFixed(1) + '%';
-    document.getElementById('bd-s').style.width = (totalStop / totalSec * 100).toFixed(1) + '%';
+  }
+
+  function scheduleNextTick(delayMs) {
+    metro.timerId = setTimeout(tick, delayMs);
+  }
+
+  function tick() {
+    if (!metro.running) return;
+    beep();
+    pulse();
+    metro.count++;
+    updateMetroUI();
+
+    let stopDuration = 0;
+    state.stops.forEach((s, i) => {
+      if (metro.count >= metro.nextThresholds[i]) {
+        stopDuration += s.sec;
+        metro.nextThresholds[i] += s.every;
+      }
+    });
+
+    if (stopDuration > 0) {
+      metro.phase = 'stopping';
+      metro.phaseEndTime = Date.now() + stopDuration * 1000;
+      updateMetroUI();
+      clearInterval(metro.countdownId);
+      metro.countdownId = setInterval(updateMetroUI, 250);
+      metro.timerId = setTimeout(() => {
+        clearInterval(metro.countdownId);
+        if (!metro.running) return;
+        metro.phase = 'running';
+        updateMetroUI();
+        scheduleNextTick(state.cycle * 1000);
+      }, stopDuration * 1000);
+    } else {
+      metro.phase = 'running';
+      scheduleNextTick(state.cycle * 1000);
+    }
+  }
+
+  function startMetro() {
+    metro.running = true;
+    metro.count = 0;
+    metro.phase = 'running';
+    metro.nextThresholds = state.stops.map(s => s.every);
+    requestWakeLock();
+    tick();
+  }
+
+  function stopMetro() {
+    metro.running = false;
+    metro.phase = 'idle';
+    clearTimeout(metro.timerId);
+    clearInterval(metro.countdownId);
+    releaseWakeLock();
+    updateMetroUI();
+  }
+
+  function toggleMetro() {
+    const btn = document.getElementById('toggle-btn');
+    if (metro.running) {
+      stopMetro();
+      btn.textContent = 'スタート';
+      btn.classList.remove('stop');
+      btn.classList.add('start');
+    } else {
+      startMetro();
+      btn.textContent = 'ストップ';
+      btn.classList.remove('start');
+      btn.classList.add('stop');
+    }
   }
 
   // ── 画面反映（復元後） ──
   function syncUI() {
     document.getElementById('cycle-val').textContent = state.cycle;
-    document.getElementById('hours-val').textContent = state.hours;
-    document.getElementById('res-unit').textContent = `/ ${state.hours}時間`;
+    document.getElementById('metro-interval-label').textContent = `投入間隔 ${state.cycle}秒`;
     renderStops();
-    calc();
+    updateMetroUI();
   }
 
   // ── Service Worker 登録 ──
