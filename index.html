@@ -63,7 +63,7 @@
     letter-spacing: -0.2px;
   }
 
-  /* ── ヒーロー（メトロノーム表示） ── */
+  /* ── ヒーロー（理論生産数） ── */
   .hero {
     background: var(--blue);
     border-radius: 22px;
@@ -112,25 +112,6 @@
   }
   .hero-unit strong { color: rgba(255,255,255,0.9); font-weight: 600; }
 
-  /* ── スタート/ストップ ボタン ── */
-  .big-btn {
-    width: 100%;
-    height: 84px;
-    border: none;
-    border-radius: 20px;
-    font-size: 22px;
-    font-weight: 700;
-    color: #fff;
-    cursor: pointer;
-    touch-action: manipulation;
-    box-shadow: var(--shadow);
-    transition: transform 0.08s, background 0.15s, box-shadow 0.15s;
-    flex-shrink: 0;
-  }
-  .big-btn:active { transform: scale(0.97); }
-  .big-btn.start { background: var(--blue); box-shadow: 0 6px 18px rgba(29,110,245,0.32); }
-  .big-btn.stop { background: var(--red); box-shadow: 0 6px 18px rgba(229,57,53,0.32); }
-
   /* ── カード共通 ── */
   .card {
     background: var(--white);
@@ -154,10 +135,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 13px 16px;
-    border-bottom: 1px solid var(--border);
     gap: 10px;
   }
-  .setting-row:last-of-type { border-bottom: none; }
   .sr-text { flex: 1; min-width: 0; }
   .sr-label { font-size: 15px; font-weight: 600; }
   .sr-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
@@ -170,7 +149,9 @@
     border-radius: 14px;
     padding: 4px;
     flex-shrink: 0;
+    transition: opacity 0.15s;
   }
+  .stepper.disabled { opacity: 0.4; pointer-events: none; }
   .sp-btn {
     width: 44px; height: 44px;
     border-radius: 10px;
@@ -196,42 +177,24 @@
   }
   .sp-unit { font-size: 10px; color: var(--muted); font-weight: 500; display: block; }
 
-  /* 停止パターン */
-  .stop-item { padding: 13px 16px; border-bottom: 1px solid var(--border); }
-  .stop-item:last-of-type { border-bottom: none; }
-  .si-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .si-name { font-size: 14px; font-weight: 600; }
-  .si-del {
-    width: 34px; height: 34px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--pill);
-    color: var(--muted);
-    font-size: 14px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    touch-action: manipulation;
-  }
-  .si-del:active { background: #fde8e8; color: var(--red); border-color: var(--red); }
-  .si-body { display: flex; align-items: center; gap: 8px; }
-  .si-sep { font-size: 13px; color: var(--muted); font-weight: 500; white-space: nowrap; }
-
-  /* 追加ボタン */
-  .add-btn {
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    width: calc(100% - 32px);
-    margin: 12px 16px 14px;
-    height: 48px;
-    border-radius: 12px;
-    border: 1.5px dashed var(--border);
-    background: transparent;
-    color: var(--muted);
-    font-size: 14px; font-weight: 600;
+  /* ── スタート/ストップ ボタン ── */
+  .big-btn {
+    width: 100%;
+    height: 84px;
+    border: none;
+    border-radius: 20px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
     cursor: pointer;
     touch-action: manipulation;
-    transition: all 0.15s;
+    box-shadow: var(--shadow);
+    transition: transform 0.08s, background 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
   }
-  .add-btn:active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+  .big-btn:active { transform: scale(0.97); }
+  .big-btn.start { background: var(--blue); box-shadow: 0 6px 18px rgba(29,110,245,0.32); }
+  .big-btn.stop { background: var(--red); box-shadow: 0 6px 18px rgba(229,57,53,0.32); }
 
   /* インストール案内 */
   .install-banner {
@@ -274,15 +237,12 @@
   <button class="ib-close" onclick="dismissBanner()">✕</button>
 </div>
 
-<!-- メトロノーム表示 -->
+<!-- 理論生産数 -->
 <div class="hero" id="metro-hero">
-  <div class="hero-eyebrow" id="metro-status">待機中</div>
-  <div class="hero-num" id="metro-count">0</div>
-  <div class="hero-unit">冊 <strong id="metro-interval-label">投入間隔 8秒</strong></div>
+  <div class="hero-eyebrow">理論生産数</div>
+  <div class="hero-num" id="res-main">450</div>
+  <div class="hero-unit">冊 <strong>/ 1時間</strong></div>
 </div>
-
-<!-- スタート/ストップ -->
-<button class="big-btn start" id="toggle-btn" onclick="toggleMetro()">スタート</button>
 
 <!-- 投入間隔設定 -->
 <div class="card">
@@ -292,7 +252,7 @@
       <div class="sr-label">投入間隔</div>
       <div class="sr-sub">ビープ音が鳴る間隔</div>
     </div>
-    <div class="stepper">
+    <div class="stepper" id="cycle-stepper">
       <button class="sp-btn" onclick="adjCycle(-1)">−</button>
       <div class="sp-mid">
         <span class="sp-val" id="cycle-val">8</span>
@@ -303,18 +263,14 @@
   </div>
 </div>
 
-<!-- 停止パターン -->
-<div class="card">
-  <div class="card-head">停止パターン</div>
-  <div id="stop-list"></div>
-  <button class="add-btn" onclick="addStop()">＋ 停止パターンを追加</button>
-</div>
+<!-- スタート/ストップ -->
+<button class="big-btn start" id="toggle-btn" onclick="toggleMetro()">スタート</button>
 
 <div class="spacer"></div>
 
 <script>
   // ── 状態 ──
-  let state = { cycle: 8, stops: [] };
+  let state = { cycle: 8 };
 
   // ── ローカルストレージから復元 ──
   function loadState() {
@@ -323,10 +279,8 @@
       if (saved) {
         const parsed = JSON.parse(saved);
         state.cycle = parsed.cycle || 8;
-        state.stops = (parsed.stops || []).map(s => ({ ...s, id: s.id || Date.now() + Math.random() }));
       }
     } catch(e) {}
-    if (state.stops.length === 0) addStop(30, 50);
   }
 
   function saveState() {
@@ -347,66 +301,17 @@
     localStorage.setItem('banner-dismissed', '1');
   }
 
+  // ── 理論生産数（1時間固定 = 3600 ÷ 投入間隔） ──
+  function calcProduction() {
+    document.getElementById('res-main').textContent = Math.round(3600 / state.cycle);
+  }
+
   // ── 投入間隔ステッパー ──
   function adjCycle(d) {
     state.cycle = Math.max(1, Math.min(120, state.cycle + d));
     document.getElementById('cycle-val').textContent = state.cycle;
-    document.getElementById('metro-interval-label').textContent = `投入間隔 ${state.cycle}秒`;
+    calcProduction();
     saveState();
-  }
-
-  // ── 停止パターン ──
-  function addStop(sec=30, every=50) {
-    state.stops.push({ id: Date.now() + Math.floor(Math.random()*1000), sec, every });
-    renderStops(); saveState();
-  }
-
-  function removeStop(id) {
-    state.stops = state.stops.filter(s => s.id !== id);
-    renderStops(); saveState();
-  }
-
-  function adjStop(id, field, d) {
-    const s = state.stops.find(s => s.id === id);
-    if (!s) return;
-    if (field === 'sec')   s.sec   = Math.max(1, Math.min(600, s.sec + d));
-    if (field === 'every') s.every = Math.max(1, Math.min(999, s.every + d));
-    document.getElementById(`sv-${id}-${field}`).textContent = s[field];
-    saveState();
-  }
-
-  function renderStops() {
-    const list = document.getElementById('stop-list');
-    list.innerHTML = '';
-    state.stops.forEach((s, i) => {
-      const el = document.createElement('div');
-      el.className = 'stop-item';
-      el.innerHTML = `
-        <div class="si-head">
-          <span class="si-name">停止パターン ${i + 1}</span>
-          <button class="si-del" onclick="removeStop(${s.id})">✕</button>
-        </div>
-        <div class="si-body">
-          <div class="stepper">
-            <button class="sp-btn" onclick="adjStop(${s.id},'sec',-5)">−</button>
-            <div class="sp-mid">
-              <span class="sp-val" id="sv-${s.id}-sec">${s.sec}</span>
-              <span class="sp-unit">秒停止</span>
-            </div>
-            <button class="sp-btn" onclick="adjStop(${s.id},'sec',+5)">+</button>
-          </div>
-          <span class="si-sep">を</span>
-          <div class="stepper">
-            <button class="sp-btn" onclick="adjStop(${s.id},'every',-5)">−</button>
-            <div class="sp-mid">
-              <span class="sp-val" id="sv-${s.id}-every">${s.every}</span>
-              <span class="sp-unit">冊ごと</span>
-            </div>
-            <button class="sp-btn" onclick="adjStop(${s.id},'every',+5)">+</button>
-          </div>
-        </div>`;
-      list.appendChild(el);
-    });
   }
 
   // ── ビープ音（Web Audio API） ──
@@ -442,15 +347,7 @@
   });
 
   // ── メトロノーム本体 ──
-  const metro = {
-    running: false,
-    count: 0,
-    phase: 'idle',        // 'running' | 'stopping'
-    nextThresholds: [],
-    timerId: null,
-    countdownId: null,
-    phaseEndTime: 0,
-  };
+  const metro = { running: false, timerId: null };
 
   function pulse() {
     const hero = document.getElementById('metro-hero');
@@ -459,73 +356,25 @@
     hero.classList.add('pulse');
   }
 
-  function updateMetroUI() {
-    document.getElementById('metro-count').textContent = metro.count;
-    const statusEl = document.getElementById('metro-status');
-    if (!metro.running) {
-      statusEl.textContent = '待機中';
-    } else if (metro.phase === 'stopping') {
-      const remain = Math.max(0, Math.ceil((metro.phaseEndTime - Date.now()) / 1000));
-      statusEl.textContent = `停止中（あと${remain}秒）`;
-    } else {
-      statusEl.textContent = '稼働中';
-    }
-  }
-
-  function scheduleNextTick(delayMs) {
-    metro.timerId = setTimeout(tick, delayMs);
-  }
-
   function tick() {
     if (!metro.running) return;
     beep();
     pulse();
-    metro.count++;
-    updateMetroUI();
-
-    let stopDuration = 0;
-    state.stops.forEach((s, i) => {
-      if (metro.count >= metro.nextThresholds[i]) {
-        stopDuration += s.sec;
-        metro.nextThresholds[i] += s.every;
-      }
-    });
-
-    if (stopDuration > 0) {
-      metro.phase = 'stopping';
-      metro.phaseEndTime = Date.now() + stopDuration * 1000;
-      updateMetroUI();
-      clearInterval(metro.countdownId);
-      metro.countdownId = setInterval(updateMetroUI, 250);
-      metro.timerId = setTimeout(() => {
-        clearInterval(metro.countdownId);
-        if (!metro.running) return;
-        metro.phase = 'running';
-        updateMetroUI();
-        scheduleNextTick(state.cycle * 1000);
-      }, stopDuration * 1000);
-    } else {
-      metro.phase = 'running';
-      scheduleNextTick(state.cycle * 1000);
-    }
   }
 
   function startMetro() {
     metro.running = true;
-    metro.count = 0;
-    metro.phase = 'running';
-    metro.nextThresholds = state.stops.map(s => s.every);
+    document.getElementById('cycle-stepper').classList.add('disabled');
     requestWakeLock();
     tick();
+    metro.timerId = setInterval(tick, state.cycle * 1000);
   }
 
   function stopMetro() {
     metro.running = false;
-    metro.phase = 'idle';
-    clearTimeout(metro.timerId);
-    clearInterval(metro.countdownId);
+    document.getElementById('cycle-stepper').classList.remove('disabled');
+    clearInterval(metro.timerId);
     releaseWakeLock();
-    updateMetroUI();
   }
 
   function toggleMetro() {
@@ -546,9 +395,7 @@
   // ── 画面反映（復元後） ──
   function syncUI() {
     document.getElementById('cycle-val').textContent = state.cycle;
-    document.getElementById('metro-interval-label').textContent = `投入間隔 ${state.cycle}秒`;
-    renderStops();
-    updateMetroUI();
+    calcProduction();
   }
 
   // ── Service Worker 登録 ──
