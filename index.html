@@ -622,8 +622,20 @@
 
   // ── 音（Web Audio API） ──
   let audioCtx = null;
+  let compressor = null;
   function ensureAudioCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // DynamicsCompressorNodeで音圧を底上げし、鋭く大きく聞こえるようにする
+      compressor = audioCtx.createDynamicsCompressor();
+      const t0 = audioCtx.currentTime;
+      compressor.threshold.setValueAtTime(-30, t0);
+      compressor.knee.setValueAtTime(6, t0);
+      compressor.ratio.setValueAtTime(16, t0);
+      compressor.attack.setValueAtTime(0.001, t0);
+      compressor.release.setValueAtTime(0.15, t0);
+      compressor.connect(audioCtx.destination);
+    }
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
@@ -634,29 +646,29 @@
       const t = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = opts.type || 'sine';
+      osc.type = opts.type || 'square';
       osc.frequency.setValueAtTime(freq, t);
       if (opts.freqEnd) osc.frequency.exponentialRampToValueAtTime(opts.freqEnd, t + duration);
-      const peak = opts.peak ?? 0.35;
-      const attack = opts.attack ?? 0.005;
+      const peak = opts.peak ?? 1.0;
+      const attack = opts.attack ?? 0.003;
       gain.gain.setValueAtTime(0.0001, t);
       gain.gain.exponentialRampToValueAtTime(peak, t + attack);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-      osc.connect(gain).connect(ctx.destination);
+      osc.connect(gain).connect(compressor);
       osc.start(t);
       osc.stop(t + duration + 0.02);
     } catch(e) {}
   }
 
   const SOUNDS = {
-    pip:    { label: 'ピッ（短い高音）',       play: () => playTone(1000, 0.12, { type: 'sine',   peak: 0.35, attack: 0.005 }) },
-    poon:   { label: 'ポーン（柔らかい中音）', play: () => playTone(600,  0.32, { type: 'sine',   peak: 0.28, attack: 0.04  }) },
+    pip:    { label: 'ピッ（短い高音）',       play: () => playTone(1300, 0.11, { type: 'square',   peak: 1.0, attack: 0.002 }) },
+    poon:   { label: 'ポーン（柔らかい中音）', play: () => playTone(700,  0.30, { type: 'triangle', peak: 0.95, attack: 0.03 }) },
     pipip:  { label: 'ピピッ（2回短音）',       play: () => {
-                playTone(1100, 0.08, { type: 'sine', peak: 0.32, attack: 0.004 });
-                setTimeout(() => playTone(1100, 0.08, { type: 'sine', peak: 0.32, attack: 0.004 }), 110);
+                playTone(1200, 0.07, { type: 'sawtooth', peak: 1.0, attack: 0.002 });
+                setTimeout(() => playTone(1200, 0.07, { type: 'sawtooth', peak: 1.0, attack: 0.002 }), 100);
               } },
-    don:    { label: '低めのドン（低音）',      play: () => playTone(150, 0.18, { type: 'triangle', peak: 0.45, attack: 0.003, freqEnd: 90 }) },
-    denshi: { label: '電子音（電子的なビープ）', play: () => playTone(880, 0.1,  { type: 'square', peak: 0.16, attack: 0.002 }) },
+    don:    { label: '低めのドン（低音）',      play: () => playTone(130, 0.17, { type: 'square', peak: 1.0, attack: 0.002, freqEnd: 75 }) },
+    denshi: { label: '電子音（電子的なビープ）', play: () => playTone(950, 0.09, { type: 'sawtooth', peak: 0.95, attack: 0.001 }) },
   };
 
   function playSound() {
