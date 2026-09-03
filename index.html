@@ -330,6 +330,23 @@
   }
   .view-btn.active { background: var(--white); color: var(--blue); box-shadow: var(--shadow); }
 
+  .danger-btn {
+    width: 100%;
+    height: 44px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--red);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
+  }
+  .danger-btn:active { background: #fde8e8; border-color: var(--red); }
+  .danger-btn:disabled { opacity: 0.4; pointer-events: none; }
+
   .group-head {
     padding: 10px 16px;
     font-size: 12px;
@@ -341,9 +358,23 @@
 
   .rec-card { padding: 12px 16px; border-bottom: 1px solid var(--border); }
   .rec-card:last-child { border-bottom: none; }
-  .rec-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .rec-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .rec-when { display: flex; align-items: baseline; gap: 6px; }
   .rec-time { font-size: 13px; font-weight: 700; }
   .rec-date { font-size: 11px; color: var(--muted); }
+  .rec-del {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--pill);
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+    flex-shrink: 0;
+  }
+  .rec-del:active { background: #fde8e8; color: var(--red); border-color: var(--red); }
   .rec-spec { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .rec-grid {
     display: grid;
@@ -486,6 +517,8 @@
     <button class="view-btn" id="view-btn-spec" onclick="switchHistoryView('spec')">仕様別（速度比較）</button>
   </div>
 
+  <button class="danger-btn" id="delete-all-btn" onclick="deleteAllRecords()">🗑 履歴をすべて削除</button>
+
   <div class="card" id="history-container">
     <div class="loading-state">読み込み中…</div>
   </div>
@@ -498,7 +531,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import {
     getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot,
-    enableIndexedDbPersistence
+    enableIndexedDbPersistence, deleteDoc, doc, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -823,8 +856,11 @@
     return `
       <div class="rec-card">
         <div class="rec-top">
-          <span class="rec-time">${fmtTime(d)}</span>
-          <span class="rec-date">${fmtDate(d)}</span>
+          <div class="rec-when">
+            <span class="rec-time">${fmtTime(d)}</span>
+            <span class="rec-date">${fmtDate(d)}</span>
+          </div>
+          <button class="rec-del" onclick="deleteRecord('${r.id}')" aria-label="削除">🗑</button>
         </div>
         ${showSpec ? `<div class="rec-spec">${specKey(r)} ／ ${r.specCount}冊</div>` : ''}
         <div class="rec-grid">
@@ -839,6 +875,7 @@
 
   function renderHistory() {
     const container = document.getElementById('history-container');
+    document.getElementById('delete-all-btn').disabled = allRecords.length === 0;
     if (allRecords.length === 0) {
       container.innerHTML = '<div class="empty-state">まだ記録がありません</div>';
       return;
@@ -878,13 +915,37 @@
   function subscribeHistory() {
     const q = query(collection(db, 'seihon_records'), orderBy('startedAt', 'desc'), limit(300));
     onSnapshot(q, snap => {
-      allRecords = snap.docs.map(d => d.data());
+      allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderHistory();
     }, err => {
       document.getElementById('history-container').innerHTML =
         `<div class="empty-state">履歴の読み込みに失敗しました<br>${err.message}</div>`;
     });
   }
+
+  window.deleteRecord = async function(id) {
+    if (!confirm('この記録を削除しますか？')) return;
+    try {
+      await deleteDoc(doc(db, 'seihon_records', id));
+    } catch (e) {
+      alert('削除に失敗しました: ' + e.message);
+    }
+  };
+
+  window.deleteAllRecords = async function() {
+    if (allRecords.length === 0) return;
+    if (!confirm('すべての記録を削除しますか？この操作は元に戻せません')) return;
+    try {
+      const chunkSize = 400;
+      for (let i = 0; i < allRecords.length; i += chunkSize) {
+        const batch = writeBatch(db);
+        allRecords.slice(i, i + chunkSize).forEach(r => batch.delete(doc(db, 'seihon_records', r.id)));
+        await batch.commit();
+      }
+    } catch (e) {
+      alert('一括削除に失敗しました: ' + e.message);
+    }
+  };
 
   // ── 画面反映（復元後） ──
   function syncUI() {
